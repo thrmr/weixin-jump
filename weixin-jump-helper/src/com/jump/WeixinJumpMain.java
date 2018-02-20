@@ -16,7 +16,7 @@ public class WeixinJumpMain {
 	private static boolean flag = true;
 	
 	//速度
-	private static double speech = 3.1f;
+	private static double speech = 3.15f;
 	//色差最小值
 	private static int redDiff = 10;
 	private static int greenDiff = 10;
@@ -31,7 +31,7 @@ public class WeixinJumpMain {
 	
 	//左侧点的检测精度
 	//y跳跃长度
-	private static int precision = 2;
+	private static int precision = 6;
 	//背景采样相对top点位置 
 	private static int xOffset = 0;
 	private static int yOffset = -20;
@@ -101,9 +101,10 @@ public class WeixinJumpMain {
 				}
 				
 				if(e.getButton() == e.BUTTON2) {
-
+					
+					flag = true;
 					new Thread(new Runnable() {
-
+						
 						@Override
 						public void run() {
 							int targetX = 0, targetY = 0, manX = 0, manY = 0, time = 0;
@@ -129,25 +130,27 @@ public class WeixinJumpMain {
 									System.out.println("未检测到目标位置");
 									return;
 								} 									
-								System.out.println("检测到目标的最top位置为：" + posTop.getX() + "," + posTop.getY());
-								System.out.println("检测到目标的最left位置为：" + posLeft.getX() + "," + posLeft.getY());
+								System.out.println("检测到目标方块的最上坐标为：" + posTop.getX() + "," + posTop.getY());
+								System.out.println("检测到目标方块的最左侧坐标为：" + posLeft.getX() + "," + posLeft.getY());
 								targetX = posTop.getX();
 								targetY = posLeft.getY();
-								System.out.println("检测到目标实际位置为：" + targetX + "," + targetY);
+								System.out.println("目标实际位置为：" + targetX + "," + targetY);
 								//计算距离
 								distance = getDistance(manX, manY, targetX, targetY);
 								//计算时间
 								time = (int) (distance * speech);
 								//调用adb命令起跳
+								double touchX =530 + Math.random() * 150,
+										touchY =1600 + Math.random() * 200;
 								try {
 									Process process = Runtime.getRuntime().exec(adbCommand + 
-											" " + (530 + Math.random() * 10) + " " + (530 + Math.random() * 10) +
-											" " + (1700 + Math.random() * 10) + " " + (1700 + Math.random() * 10) +
+											" " + touchX + " " + touchY  +
+											" " + (touchX + Math.random() * 10) + " " + (touchY + Math.random() * 13) +
 											" " + time);
 									process.waitFor();
 									process.destroy();
-									//延迟1.5s后重新加载截图
-									Thread.sleep(1500);
+									//延迟1.5-3s后重新加载截图
+									Thread.sleep((int)(1500 + Math.random() * 1500));
 									screenCap();
 									bufferedImage = ImageUtil.getScaleImage(imageUrl, 480, 800);
 									myJpanel.setBufferedImage(bufferedImage);
