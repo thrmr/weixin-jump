@@ -2,6 +2,7 @@ package com.jump;
 
 import java.awt.Color;
 import java.awt.Container;
+import java.awt.Graphics;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
@@ -13,47 +14,48 @@ import com.jump.utils.ImageUtil;
 
 public class WeixinJumpMain {
 	
-	private static boolean flag = true;
+	private boolean flag = true;
 	
 	//速度
-	private static double speech = 3.15f;
-	//色差最小值
-	private static int redDiff = 10;
-	private static int greenDiff = 10;
-	private static int buleDiff = 10;
+	public double speech = 3.15f;
+	//色差允许最大值
+	public int redDiff = 10;
+	public int greenDiff = 10;
+	public int buleDiff = 10;
 	
 	//扫描起始位置
-	public static int xStart = 10;
-	public static int yStart = 120;
+	private int xStart = 10;
+	private int yStart = 120;
 	//扫描终止位置
-	public static int xStop = 470;
-	public static int yStop = 720;
+	private int xStop = 470;
+	private int yStop = 720;
 	
 	//左侧点的检测精度
 	//y跳跃长度
-	private static int precision = 6;
-	//背景采样相对top点位置 
-	private static int xOffset = 0;
-	private static int yOffset = -20;
+	public int precision = 6;
+	//背景颜色采集位置偏移 
+	public int xOffset = 0;
+	public int yOffset = -20;
 	
-	private static BufferedImage bufferedImage;
-	public static String imageUrl = "/tmp/weixinjump.png";
-	//截图脚本位置
-	public static String adbScreencapCommand = "/tmp/weixinjump.sh";
+	private BufferedImage bufferedImage;
+	//截图路径
+	public String imagePath = "/tmp/weixinjump.png";
+	//截图命令linux
+	public String[] adbScreencapCommand = {"/bin/bash","-c","adb shell screencap -p > " + imagePath};
 	//adb触屏指令
-	private static String adbCommand = "adb shell input swipe";
+	public String adbCommand = "adb shell input swipe";
 
-	//人偶的相对颜色差值允许最小值
-	private static int manR = 2;
-	private static int manG = 2;
-	private static int manB = 2;
+	//人偶底部颜色允许误差
+	public int manR = 2;
+	public int manG = 2;
+	public int manB = 2;
 	
 	//人偶坐标
 	private static int manX;
 	//跳过人偶参数
-	public static int skipWidth = 35;
+	public int skipWidth = 35;
 	
-	public static void main(String[] args) {
+	public void start() {
 	
 		//设置窗口
 		JFrame frame = new JFrame("微信跳一跳辅助");
@@ -62,7 +64,6 @@ public class WeixinJumpMain {
 		Container contentPane = frame.getContentPane();
 		
 		screenCap();
-		bufferedImage = ImageUtil.getScaleImage(imageUrl, 480, 800);
 		final MyJpanel myJpanel = new MyJpanel(bufferedImage);
 		contentPane.add(myJpanel);
 		
@@ -75,20 +76,19 @@ public class WeixinJumpMain {
 			
 			@Override
 			public void mouseReleased(MouseEvent e) {
-				//加载游戏图片
+				//停止，并重新加载游戏图片
 				if(e.getButton() == e.BUTTON3) {
 					flag = false;
 					screenCap();
-					bufferedImage = ImageUtil.getScaleImage(imageUrl, 480, 800);
 					myJpanel.setBufferedImage(bufferedImage);
 					myJpanel.repaint();
 					System.out.println("更新截图成功");
 				}
-				//确定
+				//打印当前坐标的坐标值和颜色
 				if(e.getButton() == e.BUTTON1) {
 					int beginX = e.getX();
 					int beginY = e.getY();
-					flag = true;
+					flag = false;
 					System.out.println("当前坐标为：" + "X:" + beginX + "    Y:" + beginY);
 					int rgb = bufferedImage.getRGB(beginX, beginY);
 					Color color = new Color(rgb);
@@ -99,7 +99,7 @@ public class WeixinJumpMain {
 					
 					
 				}
-				
+				//启动
 				if(e.getButton() == e.BUTTON2) {
 					
 					flag = true;
@@ -135,6 +135,11 @@ public class WeixinJumpMain {
 								targetX = posTop.getX();
 								targetY = posLeft.getY();
 								System.out.println("目标实际位置为：" + targetX + "," + targetY);
+								//对游戏图片做标记
+								drawMark(manX, manY, targetX, targetY);
+								//显示图片
+								myJpanel.setBufferedImage(bufferedImage);
+								myJpanel.repaint();
 								//计算距离
 								distance = getDistance(manX, manY, targetX, targetY);
 								//计算时间
@@ -152,9 +157,6 @@ public class WeixinJumpMain {
 									//延迟1.5-3s后重新加载截图
 									Thread.sleep((int)(1500 + Math.random() * 1500));
 									screenCap();
-									bufferedImage = ImageUtil.getScaleImage(imageUrl, 480, 800);
-									myJpanel.setBufferedImage(bufferedImage);
-									myJpanel.repaint();
 								} catch (Exception e) {
 									System.out.println("起跳失败");
 									e.printStackTrace();
@@ -171,7 +173,7 @@ public class WeixinJumpMain {
 	
 	
 	//得到人偶的位置
-	public static Postion getManPos() {
+	private Postion getManPos() {
 		for(int y=yStart; y<yStop ; y++) {
 			for(int x=xStart; x<xStop; x++ ) {
 				int c = bufferedImage.getRGB(x, y);
@@ -185,7 +187,7 @@ public class WeixinJumpMain {
 	}
 	
 	//得到目标位置坐标
-	public static Map<String, Postion> getTargetPos(int precision) {
+	private Map<String, Postion> getTargetPos(int precision) {
 		HashMap<String, Postion> map = new HashMap<String, Postion>();
 		for(int y=yStart; y<yStop ; y++) {
 			for(int x=xStart; x<xStop; x++ ) {
@@ -236,7 +238,7 @@ public class WeixinJumpMain {
 		return null;
 	}
 	//计算色差
-	static int[] getColorDif(int c1, int c2) {
+	private int[] getColorDif(int c1, int c2) {
 		Color color1 = new Color(c1);
 		int r1 = color1.getRed();
 		int g1 = color1.getGreen();
@@ -254,7 +256,7 @@ public class WeixinJumpMain {
 		return array;
 	}
 	//根据色差计算颜色是否一致
-	static boolean compareColor(int c1, int c2) {
+	private boolean compareColor(int c1, int c2) {
 		int[] a = getColorDif(c1, c2);
 		int r = a[0];
 		int g = a[1];
@@ -268,13 +270,14 @@ public class WeixinJumpMain {
 	
 	
 	
-	//跳一跳游戏截图到电脑
-	public static void screenCap() {
+	//跳一跳游戏截图并加载
+	private void screenCap() {
 		try {
-			Process process = Runtime.getRuntime().exec(adbScreencapCommand + " " + imageUrl);
+			Process process = Runtime.getRuntime().exec(adbScreencapCommand);
 			process.waitFor();
-			if(process.exitValue() == 0) {
-				
+			if(process.exitValue() == 0) {				
+				//bufferedImage = ImageUtil.getScaleImage(process.getInputStream(), 480, 800);
+				bufferedImage = ImageUtil.getScaleImage(imagePath, 480, 800);
 				System.out.println("adb截图成功");
 			}
 			process.destroy();
@@ -282,17 +285,32 @@ public class WeixinJumpMain {
 			System.out.println("adb截图出错");
 			e1.printStackTrace();
 		}
-		
-	
 	}
 	
 	//计算两坐标的距离
-	static double getDistance(int beginX, int beginY, int endX, int endY) {
+	private double getDistance(int beginX, int beginY, int endX, int endY) {
 		int xDistance = beginX - endX;
 		int yDistance = beginY - endY;
 		double distance = Math.sqrt( yDistance*yDistance + xDistance*xDistance);
 		
 		return distance;
+	}
+	
+	//对游戏截图做标记
+	private void drawMark(int beginX, int beginY, int endX, int endY) {
+		Graphics g = bufferedImage.getGraphics();
+		//圆径长
+		int d = 10;
+		
+		g.setColor(Color.RED);
+		g.drawOval(beginX - d/2, beginY - d/2, d, d);
+		g.drawOval(endX - d/2, endY - d/2, d, d);
+		//划线
+		g.drawLine(beginX, beginY, endX, endY);
+	}
+	
+	public static void main(String[] args) {
+		new WeixinJumpMain().start();
 	}
 }
 
