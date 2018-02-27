@@ -17,18 +17,18 @@ public class WeixinJumpMain {
 	private boolean flag = true;
 	
 	//速度
-	public double speech = 3.15f;
+	public double speech = 1.36f;
 	//色差允许最大值
 	public int redDiff = 10;
 	public int greenDiff = 10;
 	public int buleDiff = 10;
 	
 	//扫描起始位置
-	private int xStart = 10;
-	private int yStart = 120;
+	private int xStart = 25;
+	private int yStart = 300;
 	//扫描终止位置
-	private int xStop = 470;
-	private int yStop = 720;
+	private int xStop = 980;
+	private int yStop = 1800;
 	
 	//左侧点的检测精度
 	//y跳跃长度
@@ -53,18 +53,18 @@ public class WeixinJumpMain {
 	//人偶坐标
 	private static int manX;
 	//跳过人偶参数
-	public int skipWidth = 35;
+	public int skipWidth = 85;
 	
 	public void start() {
 	
 		//设置窗口
 		JFrame frame = new JFrame("微信跳一跳辅助");
-		frame.setSize(485, 825);
+		frame.setSize(455, 825);
 		frame.setLocation(1000, 200);
 		Container contentPane = frame.getContentPane();
 		
 		screenCap();
-		final MyJpanel myJpanel = new MyJpanel(bufferedImage);
+		final MyJpanel myJpanel = new MyJpanel(ImageUtil.getBufferedImage(bufferedImage, 450, 800));
 		contentPane.add(myJpanel);
 		
 		
@@ -80,7 +80,8 @@ public class WeixinJumpMain {
 				if(e.getButton() == e.BUTTON3) {
 					flag = false;
 					screenCap();
-					myJpanel.setBufferedImage(bufferedImage);
+					//显示图片
+					myJpanel.setBufferedImage(ImageUtil.getBufferedImage(bufferedImage, 450, 800));
 					myJpanel.repaint();
 					System.out.println("更新截图成功");
 				}
@@ -90,7 +91,7 @@ public class WeixinJumpMain {
 					int beginY = e.getY();
 					flag = false;
 					System.out.println("当前坐标为：" + "X:" + beginX + "    Y:" + beginY);
-					int rgb = bufferedImage.getRGB(beginX, beginY);
+					int rgb = ImageUtil.getBufferedImage(bufferedImage, 450, 800).getRGB(beginX, beginY);
 					Color color = new Color(rgb);
 					System.out.printf("颜色为:%x ,", rgb);
 					System.out.printf("r颜色为:%x ,", color.getRed());
@@ -125,20 +126,20 @@ public class WeixinJumpMain {
 								//检测目标位置
 								Map<String, Postion> posMap = getTargetPos(precision);
 								Postion posTop = posMap.get("top");
-								Postion posLeft = posMap.get("left");
-								if(posTop == null || posLeft == null) {
+								Postion posRight = posMap.get("right");
+								if(posTop == null || posRight == null) {
 									System.out.println("未检测到目标位置");
 									return;
 								} 									
 								System.out.println("检测到目标方块的最上坐标为：" + posTop.getX() + "," + posTop.getY());
-								System.out.println("检测到目标方块的最左侧坐标为：" + posLeft.getX() + "," + posLeft.getY());
+								System.out.println("检测到目标方块的最右坐标为：" + posRight.getX() + "," + posRight.getY());
 								targetX = posTop.getX();
-								targetY = posLeft.getY();
+								targetY = posRight.getY();
 								System.out.println("目标实际位置为：" + targetX + "," + targetY);
 								//对游戏图片做标记
-								drawMark(manX, manY, targetX, targetY);
+								drawMark(manX, manY, targetX, targetY, posTop.getX(), posTop.getY(), posRight.getX(), posRight.getY());
 								//显示图片
-								myJpanel.setBufferedImage(bufferedImage);
+								myJpanel.setBufferedImage(ImageUtil.getBufferedImage(bufferedImage, 450, 800));
 								myJpanel.repaint();
 								//计算距离
 								distance = getDistance(manX, manY, targetX, targetY);
@@ -177,7 +178,7 @@ public class WeixinJumpMain {
 		for(int y=yStart; y<yStop ; y++) {
 			for(int x=xStart; x<xStop; x++ ) {
 				int c = bufferedImage.getRGB(x, y);
-				int[] colorDif = getColorDif(c, 0xff383862);
+				int[] colorDif = getColorDif(c, 0xff393963);
 				if (colorDif[0] < manR && colorDif[1] < manG && colorDif[2] < manB) {
 					return new Postion(x, y);
 				}
@@ -201,7 +202,7 @@ public class WeixinJumpMain {
 					}
 					//得到目标方块最上坐标
 					map.put("top", new Postion(x+1, y));
-					//检测最左侧坐标
+					//检测最右侧坐标
 					//背景采样
 					int bgColor = bufferedImage.getRGB(x + xOffset, y + yOffset);
 					System.out.printf("采集到的背景色为：%x%n", bgColor);
@@ -214,7 +215,7 @@ public class WeixinJumpMain {
 						while(compareColor(bufferedImage.getRGB(x1, y1), bgColor) == false) {
 							x1++;
 							if (x1 >= bufferedImage.getWidth()) {
-								map.put("left", new Postion(x1, y1));
+								map.put("right", new Postion(x1, y1));
 								return map;
 							}
 						}
@@ -230,7 +231,7 @@ public class WeixinJumpMain {
 							k++;
 						}
 					}
-					map.put("left", new Postion(x1, y1));
+					map.put("right", new Postion(x1, y1));
 					return map;
 				}
 			}
@@ -277,8 +278,10 @@ public class WeixinJumpMain {
 			process.waitFor();
 			if(process.exitValue() == 0) {				
 				//bufferedImage = ImageUtil.getScaleImage(process.getInputStream(), 480, 800);
-				bufferedImage = ImageUtil.getScaleImage(imagePath, 480, 800);
-				System.out.println("adb截图成功");
+				//将图片转换成宽*高为1080*1920的BufferedImage对象
+				bufferedImage = ImageUtil.getScaleImage(imagePath, 1080, 1920);
+				//bufferedImage = ImageUtil.getBufferedImage(imagePath);
+				System.out.println("adb截图成功,图片大小为：" + bufferedImage.getWidth() + "*" + bufferedImage.getHeight());
 			}
 			process.destroy();
 		} catch (Exception e1) {
@@ -297,14 +300,16 @@ public class WeixinJumpMain {
 	}
 	
 	//对游戏截图做标记
-	private void drawMark(int beginX, int beginY, int endX, int endY) {
+	private void drawMark(int beginX, int beginY, int endX, int endY, int topX,int topY, int rightX, int rightY) {
 		Graphics g = bufferedImage.getGraphics();
 		//圆径长
-		int d = 10;
+		int d = 20;
 		
 		g.setColor(Color.RED);
 		g.drawOval(beginX - d/2, beginY - d/2, d, d);
 		g.drawOval(endX - d/2, endY - d/2, d, d);
+		g.drawOval(topX - d/2, topY - d/2, d, d);
+		g.drawOval(rightX - d/2, rightY - d/2, d, d);
 		//划线
 		g.drawLine(beginX, beginY, endX, endY);
 	}

@@ -93,6 +93,20 @@ public class ImageUtil {
 		}
 		return null;
 	}
+	/**
+	 * 将指定BufferedImage转换为指定大小的BufferedImage对象
+	 *<p>Title: getBufferedImage </p>
+	 *<p>Description: </p>
+	 *@param bImage
+	 *@return
+	 *@see ImageUtil
+	 */
+	public static BufferedImage getBufferedImage(BufferedImage bImage, int width, int height) {
+		BufferedImage bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g2d = bufferedImage.createGraphics();
+		g2d.drawImage(bImage.getScaledInstance(width, height, Image.SCALE_SMOOTH), 0, 0, null);
+		return bufferedImage;
+	}
 	
 	/**
 	 * 从指定路径加载png格式图片，并转化成指定大小的BufferedImage对象，并返回
@@ -107,17 +121,10 @@ public class ImageUtil {
 	public static BufferedImage getScaleImage(String imageUrl, int width, int height) {
 		
 		//加载图片
-		try {
-			BufferedImage image = getBufferedImage(imageUrl);
-			BufferedImage bImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB); 
-			Graphics2D g2d = bImage.createGraphics();  
-			g2d.drawImage(image.getScaledInstance(width, height, Image.SCALE_SMOOTH), 0, 0, null);
-			return bImage;
-		} catch (Exception e) {
-			System.out.println("截图加载失败");
-			e.printStackTrace();
-		}
-		return null;
+		BufferedImage image = getBufferedImage(imageUrl);
+		BufferedImage bufferedImage = getBufferedImage(image, width, height);
+		
+		return bufferedImage;
 	}
 	
 	/**
@@ -133,17 +140,10 @@ public class ImageUtil {
 	public static BufferedImage getScaleImage(InputStream inputStream, int width, int height) {
 		
 		//加载图片
-		try {
-			BufferedImage image = getBufferedImage(inputStream);
-			BufferedImage bImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB); 
-			Graphics2D g2d = bImage.createGraphics();  
-			g2d.drawImage(image.getScaledInstance(width, height, Image.SCALE_SMOOTH), 0, 0, null);
-			return bImage;
-		} catch (Exception e) {
-			System.out.println("截图加载失败");
-			e.printStackTrace();
-		}
-		return null;
+		BufferedImage image = getBufferedImage(inputStream);
+		BufferedImage bufferedImage = getBufferedImage(image, width, height);
+		
+		return bufferedImage;
 	}
 	
 	/**
